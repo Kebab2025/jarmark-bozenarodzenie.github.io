@@ -18,13 +18,25 @@
   #resztaText { margin-top:15px; font-weight:bold; }
   .dark { background:#111; color:#eee; }
   .dark #koszyk, .dark #paragon { background:#222; }
+  #loginDiv {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:#fff; padding:20px; border-radius:15px; box-shadow:0 0 15px rgba(0,0,0,0.5);
+    width:300px; text-align:center; z-index:2000;
+  }
 </style>
 </head>
 <body>
 
-<h1>🎄 Kasa Świąteczna PRO 🎅</h1>
+<div id="loginDiv">
+  <h2>🔑 Logowanie kasjera</h2>
+  <input type="text" id="loginUser" placeholder="Login"><br><br>
+  <input type="password" id="loginPass" placeholder="Hasło"><br><br>
+  <button onclick="zaloguj()">Zaloguj</button>
+</div>
 
-<!-- Przełącznik motywu -->
+<div id="app" style="display:none;">
+<h1>🎄 Kasa Świąteczna PRO 🎅</h1>
+<p id="kasjerInfo"></p>
 <button onclick="toggleDarkMode()">🌙/☀️ Tryb</button>
 <hr>
 
@@ -84,8 +96,31 @@
 <h2>Paragon:</h2>
 <pre id="paragon"></pre>
 <button onclick="drukujParagon()">🖨 Drukuj paragon</button>
+</div>
 
 <script>
+// ---- Kasjerzy ----
+const kasjerzy = {
+  "kasjer1":"haslo1",
+  "kasjer2":"haslo2",
+  "kasjer3":"haslo3"
+};
+let zalogowanyKasjer=null;
+
+function zaloguj(){
+  let user=document.getElementById("loginUser").value.trim();
+  let pass=document.getElementById("loginPass").value.trim();
+  if(kasjerzy[user] && kasjerzy[user]===pass){
+    zalogowanyKasjer=user;
+    document.getElementById("loginDiv").style.display="none";
+    document.getElementById("app").style.display="block";
+    document.getElementById("kasjerInfo").textContent="👨‍💼 Zalogowany: "+user;
+  } else {
+    alert("Nieprawidłowe dane logowania!");
+  }
+}
+
+// ---- Produkty ----
 const produkty = {
   "F":["Frytki duże",12],
   "f":["Frytki małe",8],
@@ -111,9 +146,12 @@ let zamowienie={}, notatki={}, numer=1, sumaPLN=0;
 let wybranaPlatnosc='', sumaDoZaplaty=0, pokazanoReszte=false;
 let rabatPromocyjny=false, punktyLojalnosciowe=0;
 
+// ---- Koszyk i paragon ----
 function dodaj(kod){
   if(!zamowienie[kod]) zamowienie[kod]=0;
-  zamowienie[kod]++; if(!notatki[kod]) notatki[kod]=[]; notatki[kod].push("");
+  zamowienie[kod]++;
+  if(!notatki[kod]) notatki[kod]=[];
+  notatki[kod].push("");
   aktualizujKoszyk();
 }
 
@@ -138,12 +176,14 @@ function aktualizujKoszyk(){
   document.getElementById("koszyk").innerHTML=tekst;
 }
 
+// ---- Promocje ----
 function kodPromocyjny(){
   let kod=prompt("Wpisz kod promocyjny:");
   if(kod && kod.trim().toUpperCase()==="PROMO10"){ rabatPromocyjny=true; alert("Kod poprawny! Rabat -10%"); aktualizujKoszyk();}
   else alert("Niepoprawny kod.");
 }
 
+// ---- Płatności ----
 function wybierzPlatnosc(){
   if(Object.keys(zamowienie).length===0) return alert("Koszyk jest pusty!");
   document.getElementById("platnoscDiv").style.display='block';
@@ -178,7 +218,8 @@ function zatwierdzPlatnosc(){
 
 function pokazParagon(kwota=null,reszta=null){
   let linie="====================================\n";
-  linie+=" 🎄 KASA ŚWIĄTECZNA PRO\n";
+  linie+=" 🎄 KASA ŚWIĄTECZNA \n";
+  linie+=" Kasjer: "+zalogowanyKasjer+"\n";
   linie+=" Zamówienie nr "+numer+"\n";
   linie+=new Date().toLocaleString()+"\n";
   linie+="------------------------------------\n";
@@ -202,10 +243,9 @@ function pokazParagon(kwota=null,reszta=null){
   document.getElementById("platnoscDiv").style.display='none'; document.getElementById("overlay").style.display='none';
 }
 
+// ---- Inne ----
 function resetuj(){zamowienie={};notatki={};rabatPromocyjny=false;document.getElementById("paragon").textContent="";aktualizujKoszyk();}
-
 function drukujParagon(){const p=document.getElementById("paragon").textContent;const w=window.open('','','width=400,height=600');w.document.write('<pre>'+p+'</pre>');w.document.close();w.focus();w.print();w.close();}
-
 function toggleDarkMode(){document.body.classList.toggle("dark");}
 </script>
 
