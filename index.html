@@ -4,138 +4,302 @@
 <meta charset="UTF-8">
 <title>Kasa Świąteczna</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  #panelLogowania, #panelKasy { max-width: 500px; margin: 0 auto; }
-  #panelKasy { display: none; }
-  input, button { padding: 10px; margin: 5px 0; width: 100%; }
-  pre { background: #f5f5f5; padding: 10px; border-radius: 6px; }
-  .naglowek { text-align: center; margin-bottom: 20px; }
+  body { font-family: Arial, sans-serif; margin: 30px; }
+  h1 { text-align: center; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+  button { padding: 15px; font-size: 16px; border-radius: 10px; cursor: pointer; }
+  input[type="text"], input[type="password"], input[type="number"] { margin-bottom:5px; width: 80%; padding:5px; }
+  #koszyk { background: #e0f7fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+  #platnoscDiv {
+    display: none; 
+    position: fixed; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%);
+    background: white; 
+    padding: 20px; 
+    border-radius: 15px; 
+    box-shadow: 0 0 15px rgba(0,0,0,0.5); 
+    z-index: 1001;
+    width: 300px;
+    text-align: center;
+  }
+  #overlay {
+    display: none;
+    position: fixed; 
+    top:0; left:0; width:100%; height:100%; 
+    background: rgba(0,0,0,0.5); 
+    z-index: 1000;
+  }
+  #resztaText { margin-top: 15px; font-weight: bold; }
+  #loginDiv { text-align: center; margin-top: 100px; }
+  #app { display:none; }
 </style>
 </head>
 <body>
 
-<div id="panelLogowania">
-  <h2>🔐 Logowanie do kasy</h2>
-  <input type="text" id="login" placeholder="Login">
-  <input type="password" id="haslo" placeholder="Hasło">
+<div id="loginDiv">
+  <h2>🔐 Logowanie do Kasy</h2>
+  <input type="text" id="login" placeholder="Login"><br>
+  <input type="password" id="haslo" placeholder="Hasło"><br>
   <button onclick="zaloguj()">Zaloguj</button>
-  <p id="blad" style="color:red;"></p>
+  <p id="loginError" style="color:red;"></p>
 </div>
 
-<div id="panelKasy">
-  <div class="naglowek">
-    <h1>🎄 Kasa Świąteczna 🎁</h1>
-    <p id="zalogowany"></p>
-    <p id="czas"></p>
-  </div>
+<div id="app">
+  <h1>🎄 Kasa Świąteczna 🍟☕</h1>
+  <h3 id="kasjerInfo"></h3>
 
-  <div>
-    <button onclick="dodaj('f')">Frytki małe (8 zł)</button>
+  <div class="grid">
     <button onclick="dodaj('F')">Frytki duże (12 zł)</button>
+    <button onclick="dodaj('f')">Frytki małe (8 zł)</button>
+    <button onclick="dodaj('w')">Wata cukrowa (7 zł)</button>
     <button onclick="dodaj('c')">Gorąca czekolada (9 zł)</button>
     <button onclick="dodaj('g')">Gofr suchy (10 zł)</button>
+    <button onclick="dodaj('gb')">Gofr bita śmietana (13 zł)</button>
+    <button onclick="dodaj('gn')">Gofr z nutellą (14 zł)</button>
+    <button onclick="dodaj('gbo')">Gofr bita śmiana + owoce (15 zł)</button>
   </div>
 
-  <h3>Koszyk:</h3>
-  <pre id="koszyk">Koszyk jest pusty</pre>
+  <h2>Koszyk:</h2>
+  <div id="koszyk">Koszyk jest pusty.</div>
 
-  <button onclick="generujParagon()">🧾 Wystaw paragon</button>
+  <button onclick="wybierzPlatnosc()">🧾 Wystaw paragon</button>
   <button onclick="resetuj()">❌ Resetuj</button>
+  <button onclick="kodPromocyjny()">🎁 Kod promocyjny</button>
+  <button onclick="drukujParagon()">🖨 Drukuj paragon</button>
 
-  <h3>Paragon:</h3>
+  <div id="overlay"></div>
+  <div id="platnoscDiv">
+    <h3>Wybierz formę płatności:</h3>
+    <select id="platnoscSelect" onchange="aktualizujWalute()">
+      <option value="PLN">Gotówka (PLN)</option>
+      <option value="USD">USD</option>
+      <option value="EUR">EUR</option>
+      <option value="BLIK">BLIK</option>
+    </select>
+    <div id="gotowkaInputDiv">
+      <label>Podaj kwotę otrzymaną od klienta: </label>
+      <input type="number" id="gotowkaInput" min="0" step="0.01">
+    </div>
+    <div id="resztaText"></div>
+    <button onclick="zatwierdzPlatnosc()">Zatwierdź płatność</button>
+  </div>
+
+  <h2>Paragon:</h2>
   <pre id="paragon"></pre>
 </div>
 
 <script>
 const produkty = {
-  "f": ["Frytki małe", 8],
   "F": ["Frytki duże", 12],
+  "f": ["Frytki małe", 8],
+  "w": ["Wata cukrowa", 7],
   "c": ["Gorąca czekolada", 9],
-  "g": ["Gofr suchy", 10]
+  "g": ["Gofr suchy", 10],
+  "gn": ["Gofr nutella", 14],
+  "gb": ["Gofr bita śmietana", 13],
+  "gbo": ["Gofr bita śmietana + owoce", 15]
 };
 
+let kursy = { USD: 4.2, EUR: 4.7 };
 let zamowienie = {};
+let notatki = {};
 let numer = 1;
-let uzytkownik = "";
+let sumaPLN = 0;
+let wybranaPlatnosc = '';
+let sumaDoZaplaty = 0;
+let pokazanoReszte = false;
+let rabatPromocyjny = false;
+let kasjer = "";
 
-function zaloguj() {
+function zaloguj(){
   const login = document.getElementById("login").value;
   const haslo = document.getElementById("haslo").value;
-
-  if ((login === "kasjer" && haslo === "1234") || (login === "admin" && haslo === "admin")) {
-    uzytkownik = login;
-    document.getElementById("panelLogowania").style.display = "none";
-    document.getElementById("panelKasy").style.display = "block";
-    document.getElementById("zalogowany").textContent = "Zalogowany jako: " + login;
-    startZegar();
+  if(login==="kasjer" && haslo==="1234"){
+    kasjer = login;
+    document.getElementById("loginDiv").style.display="none";
+    document.getElementById("app").style.display="block";
+    document.getElementById("kasjerInfo").textContent = "👤 Zalogowany kasjer: " + kasjer;
   } else {
-    document.getElementById("blad").textContent = "Błędny login lub hasło!";
+    document.getElementById("loginError").textContent = "Błędny login lub hasło!";
   }
-}
-
-function startZegar() {
-  setInterval(() => {
-    const teraz = new Date();
-    document.getElementById("czas").textContent = teraz.toLocaleString();
-  }, 1000);
 }
 
 function dodaj(kod) {
   if (!zamowienie[kod]) zamowienie[kod] = 0;
   zamowienie[kod]++;
+  if (!notatki[kod]) notatki[kod] = [];
+  notatki[kod].push("");
   aktualizujKoszyk();
 }
 
 function aktualizujKoszyk() {
   let tekst = "";
-  let suma = 0;
-  if (Object.keys(zamowienie).length === 0) {
-    tekst = "Koszyk jest pusty";
-  } else {
-    for (let kod in zamowienie) {
-      let [nazwa, cena] = produkty[kod];
-      let ilosc = zamowienie[kod];
-      let koszt = ilosc * cena;
-      suma += koszt;
-      tekst += `${ilosc}x ${nazwa} = ${koszt} zł\n`;
-    }
-    tekst += "\nSuma: " + suma + " zł";
-  }
-  document.getElementById("koszyk").textContent = tekst;
-}
-
-function generujParagon() {
-  let suma = 0;
-  let linie = "==============================\n";
-  linie += "🎄  KASA ŚWIĄTECZNA  🎁\n";
-  linie += "Zamówienie nr " + numer + "\n";
-  linie += "Kasjer: " + uzytkownik + "\n";
-  linie += new Date().toLocaleString() + "\n";
-  linie += "------------------------------\n";
-
+  sumaPLN = 0;
   for (let kod in zamowienie) {
     let [nazwa, cena] = produkty[kod];
     let ilosc = zamowienie[kod];
-    let koszt = cena * ilosc;
-    suma += koszt;
-    linie += `${ilosc}x ${nazwa.padEnd(20)} ${koszt} zł\n`;
+    sumaPLN += cena * ilosc;
+
+    let wszystkiePuste = notatki[kod].every(n => n.trim()==="");
+    if(wszystkiePuste){
+      tekst += `<div>${ilosc}x ${nazwa} = ${cena*ilosc} zł</div>`;
+    } else {
+      for(let i=0;i<ilosc;i++){
+        let linia = `1x ${nazwa} = ${cena} zł`;
+        if(notatki[kod][i].trim()!=="") linia += ` (Notatka: ${notatki[kod][i]})`;
+        tekst += `<div>${linia}</div>`;
+      }
+    }
+
+    for(let i=0;i<ilosc;i++){
+      tekst += `<input type="text" placeholder="Notatka do produktu" value="${notatki[kod][i]}" oninput="notatki['${kod}'][${i}]=this.value"><br>`;
+    }
   }
 
-  linie += "------------------------------\n";
-  linie += "SUMA: " + suma + " zł\n";
-  linie += "==============================\n";
+  let sumaDoWyswietlenia = sumaPLN;
+  if(rabatPromocyjny){
+    let rabat = (sumaPLN*0.1).toFixed(2);
+    sumaDoWyswietlenia = (sumaPLN - rabat).toFixed(2);
+    tekst += `<div><b>Rabat promocyjny -10% (-${rabat} zł)</b></div>`;
+  }
 
-  document.getElementById("paragon").textContent = linie;
+  tekst += `<div><b>Suma: ${sumaDoWyswietlenia} zł</b></div>`;
+  document.getElementById("koszyk").innerHTML = tekst;
+}
+
+function kodPromocyjny(){
+  let kod = prompt("Wpisz kod promocyjny:");
+  if(kod && kod.trim().toUpperCase()==="PROMO10"){
+    rabatPromocyjny=true;
+    alert("Kod poprawny! Rabat -10% zastosowany.");
+    aktualizujKoszyk();
+  } else alert("Niepoprawny kod promocyjny.");
+}
+
+function wybierzPlatnosc(){
+  if(Object.keys(zamowienie).length===0) return alert("Koszyk jest pusty!");
+  document.getElementById("platnoscDiv").style.display='block';
+  document.getElementById("overlay").style.display='block';
+  document.getElementById("gotowkaInputDiv").style.display='block';
+  document.getElementById("gotowkaInput").value='';
+  document.getElementById("resztaText").textContent='';
+  pokazanoReszte=false;
+  aktualizujWalute();
+}
+
+function aktualizujWalute(){
+  const waluta = document.getElementById("platnoscSelect").value;
+  if(waluta==='PLN'){
+    document.getElementById("gotowkaInput").placeholder="kwota w PLN";
+    document.getElementById("gotowkaInputDiv").style.display='block';
+  } else if(waluta==='USD' || waluta==='EUR'){
+    let sumaWaluta = (sumaPLN*1.2/kursy[waluta]).toFixed(2);
+    document.getElementById("gotowkaInput").placeholder=`kwota w ${waluta}, min: ${sumaWaluta}`;
+    document.getElementById("gotowkaInputDiv").style.display='block';
+  } else if(waluta==='BLIK'){
+    document.getElementById("gotowkaInputDiv").style.display='none';
+  }
+}
+
+function zatwierdzPlatnosc(){
+  wybranaPlatnosc = document.getElementById("platnoscSelect").value;
+  if(wybranaPlatnosc==='USD' || wybranaPlatnosc==='EUR'){
+    sumaDoZaplaty = (sumaPLN*1.2/kursy[wybranaPlatnosc]).toFixed(2);
+  } else if(wybranaPlatnosc==='PLN') sumaDoZaplaty=sumaPLN;
+
+  if(rabatPromocyjny && wybranaPlatnosc!=='BLIK') sumaDoZaplaty=(sumaDoZaplaty*0.9).toFixed(2);
+
+  if(wybranaPlatnosc==='BLIK'){
+    pokazParagon(wybranaPlatnosc,sumaDoZaplaty);
+    document.getElementById("platnoscDiv").style.display='none';
+    document.getElementById("overlay").style.display='none';
+  } else {
+    let kwota=parseFloat(document.getElementById("gotowkaInput").value);
+    if(isNaN(kwota) || kwota<sumaDoZaplaty) return alert("Kwota za mała!");
+    if(!pokazanoReszte){
+      let reszta=(kwota-sumaDoZaplaty).toFixed(2);
+      document.getElementById("resztaText").textContent=`Reszta: ${reszta} ${wybranaPlatnosc}`;
+      pokazanoReszte=true;
+      return;
+    } else {
+      let reszta=(kwota-sumaDoZaplaty).toFixed(2);
+      pokazParagon(wybranaPlatnosc,kwota,reszta,sumaDoZaplaty);
+      document.getElementById("platnoscDiv").style.display='none';
+      document.getElementById("overlay").style.display='none';
+    }
+  }
+}
+
+function pokazParagon(platnosc, kwota=null, reszta=null, sumaDoZaplaty=null){
+  let linie="====================================\n";
+  linie+="   🎄 KASA ŚWIĄTECZNA 🍟☕\n";
+  linie+="   Zamówienie nr "+numer+"\n";
+  linie+="   Kasjer: "+kasjer+"\n";
+  linie+=new Date().toLocaleString()+"\n";
+  linie+="------------------------------------\n";
+  linie+="Ilość   Produkt                  Cena\n";
+  linie+="------------------------------------\n";
+
+  for(let kod in zamowienie){
+    let [nazwa,cena]=produkty[kod];
+    let ilosc=zamowienie[kod];
+    let wszystkiePuste = notatki[kod].every(n=>n.trim()==="");
+    if(wszystkiePuste){
+      linie+=`${ilosc}x ${nazwa.padEnd(22)} ${cena*ilosc} zł\n`;
+    } else {
+      for(let i=0;i<ilosc;i++){
+        linie+=`1x ${nazwa.padEnd(22)} ${cena} zł`;
+        if(notatki[kod][i].trim()!=="") linie+=` (Notatka: ${notatki[kod][i]})`;
+        linie+="\n";
+      }
+    }
+  }
+
+  linie+="------------------------------------\n";
+  let sumaFinal=sumaPLN;
+  if(rabatPromocyjny){
+    let rabat=(sumaPLN*0.1).toFixed(2);
+    sumaFinal=(sumaPLN-rabat).toFixed(2);
+    linie+=`Rabat promocyjny -10% (-${rabat} zł)\n`;
+  }
+
+  linie+="SUMA: "+(sumaDoZaplaty?sumaDoZaplaty:sumaFinal)+" "+platnosc+"\n";
+  if(reszta!==null) linie+="Kwota otrzymana: "+kwota+" "+platnosc+"\n";
+  if(reszta!==null) linie+="Reszta: "+reszta+" "+platnosc+"\n";
+  linie+="Płatność: "+platnosc+"\n";
+  linie+="====================================\n";
+
+  document.getElementById("paragon").textContent=linie;
   numer++;
-  zamowienie = {};
+  zamowienie={};
+  notatki={};
+  rabatPromocyjny=false;
   aktualizujKoszyk();
 }
 
-function resetuj() {
-  zamowienie = {};
-  document.getElementById("koszyk").textContent = "Koszyk jest pusty";
-  document.getElementById("paragon").textContent = "";
+function resetuj(){
+  zamowienie={};
+  notatki={};
+  rabatPromocyjny=false;
+  document.getElementById("paragon").textContent="";
+  document.getElementById("resztaText").textContent='';
+  document.getElementById("platnoscDiv").style.display='none';
+  document.getElementById("overlay").style.display='none';
+  aktualizujKoszyk();
+}
+
+function drukujParagon() {
+  const paragonTekst = document.getElementById("paragon").textContent;
+  if(paragonTekst.trim()==="") return alert("Brak paragonu do druku!");
+  const oknoDruk = window.open('', '', 'width=400,height=600');
+  oknoDruk.document.write('<pre style="font-family: monospace; font-size: 16px;">' + paragonTekst + '</pre>');
+  oknoDruk.document.close();
+  oknoDruk.focus();
+  oknoDruk.print();
+  oknoDruk.close();
 }
 </script>
+
 </body>
 </html>
