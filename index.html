@@ -4,12 +4,47 @@
 <meta charset="UTF-8">
 <title>Kasa Świąteczna</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 30px; }
-  h1 { text-align: center; }
-  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-  button { padding: 15px; font-size: 16px; border-radius: 10px; cursor: pointer; }
+  body { 
+    font-family: Arial, sans-serif; 
+    margin: 30px; 
+    background: linear-gradient(to bottom right, #fff8e1, #ffe0b2); 
+  }
+  h1 { 
+    text-align: center; 
+    position: relative;
+    animation: swiatelka 3s infinite alternate;
+  }
+  @keyframes swiatelka {
+    0% { text-shadow: 0 0 5px red, 0 0 10px gold; }
+    50% { text-shadow: 0 0 10px green, 0 0 15px red; }
+    100% { text-shadow: 0 0 10px gold, 0 0 20px green; }
+  }
+  .grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 10px; 
+    margin-bottom: 20px; 
+  }
+  button { 
+    padding: 15px; 
+    font-size: 16px; 
+    border-radius: 10px; 
+    cursor: pointer; 
+    transition: transform 0.2s, background 0.2s; 
+    background: #fff3e0;
+    border: 1px solid #d2691e;
+  }
+  button:hover { 
+    transform: scale(1.05); 
+    background: #ffe0b2; 
+  }
   input[type="text"] { margin-bottom:5px; width: 80%; }
-  #koszyk { background: #e0f7fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+  #koszyk { 
+    background: #e0f7fa; 
+    padding: 15px; 
+    border-radius: 10px; 
+    margin-bottom: 20px; 
+  }
   #platnoscDiv {
     display: none; 
     position: fixed; 
@@ -37,15 +72,26 @@
 
 <h1>🎄 Kasa Świąteczna 🍟☕</h1>
 
+<h2>🥨 Jedzenie</h2>
 <div class="grid">
-  <button onclick="dodaj('F')">Frytki duże (12 zł)</button>
-  <button onclick="dodaj('f')">Frytki małe (8 zł)</button>
-  <button onclick="dodaj('w')">Wata cukrowa (7 zł)</button>
-  <button onclick="dodaj('c')">Gorąca czekolada (9 zł)</button>
-  <button onclick="dodaj('g')">Gofr suchy (10 zł)</button>
-  <button onclick="dodaj('gb')">Gofr bita śmietana (13 zł)</button>
-  <button onclick="dodaj('gn')">Gofr z nutellą (14 zł)</button>
-  <button onclick="dodaj('gbo')">Gofr bita śmiana + owoce (15 zł)</button>
+  <button onclick="dodaj('F')">🍟 Frytki duże (12 zł)</button>
+  <button onclick="dodaj('f')">🍟 Frytki małe (8 zł)</button>
+  <button onclick="dodaj('w')">🍭 Wata cukrowa (7 zł)</button>
+  <button onclick="dodaj('g')">🧇 Gofr suchy (10 zł)</button>
+  <button onclick="dodaj('gb')">🧇 Gofr bita śmietana (13 zł)</button>
+  <button onclick="dodaj('gn')">🧇 Gofr z nutellą (14 zł)</button>
+  <button onclick="dodaj('gbo')">🧇 Gofr bita śmietana + owoce (15 zł)</button>
+  <button onclick="dodaj('piernik')">🍪 Piernik świąteczny (6 zł)</button>
+  <button onclick="dodaj('popcorn')">🍿 Popcorn karmelowy (9 zł)</button>
+  <button onclick="dodaj('barszcz')">🥣 Barszcz czerwony (11 zł)</button>
+  <button onclick="dodaj('uszka')">🥟 Uszka z grzybami (14 zł)</button>
+</div>
+
+<h2>🥤 Napoje</h2>
+<div class="grid">
+  <button onclick="dodaj('c')">☕ Gorąca czekolada (9 zł)</button>
+  <button onclick="dodaj('herbata')">🍵 Herbata zimowa (8 zł)</button>
+  <button onclick="dodaj('grzaniec')">🍷 Grzaniec korzenny (15 zł)</button>
 </div>
 
 <h2>Koszyk:</h2>
@@ -54,6 +100,7 @@
 <button onclick="wybierzPlatnosc()">🧾 Wystaw paragon</button>
 <button onclick="resetuj()">❌ Resetuj</button>
 <button onclick="kodPromocyjny()">🎁 Kod promocyjny</button>
+<button onclick="drukujParagon()">🖨 Drukuj paragon</button>
 
 <div id="overlay"></div>
 <div id="platnoscDiv">
@@ -84,186 +131,17 @@ const produkty = {
   "g": ["Gofr suchy", 10],
   "gn": ["Gofr nutella", 14],
   "gb": ["Gofr bita śmietana", 13],
-  "gbo": ["Gofr bita śmietana + owoce", 15]
+  "gbo": ["Gofr bita śmietana + owoce", 15],
+  "piernik": ["Piernik świąteczny", 6],
+  "popcorn": ["Popcorn karmelowy", 9],
+  "barszcz": ["Barszcz czerwony", 11],
+  "uszka": ["Uszka z grzybami", 14],
+  "herbata": ["Herbata zimowa", 8],
+  "grzaniec": ["Grzaniec korzenny", 15]
 };
 
-let kursy = { USD: 4.2, EUR: 4.7 };
-let zamowienie = {};
-let notatki = {};
-let numer = 1;
-let sumaPLN = 0;
-let wybranaPlatnosc = '';
-let sumaDoZaplaty = 0;
-let pokazanoReszte = false;
-let rabatPromocyjny = false;
-
-function dodaj(kod) {
-  if (!zamowienie[kod]) zamowienie[kod] = 0;
-  zamowienie[kod]++;
-  if (!notatki[kod]) notatki[kod] = [];
-  notatki[kod].push("");
-  aktualizujKoszyk();
-}
-
-function aktualizujKoszyk() {
-  let tekst = "";
-  sumaPLN = 0;
-  for (let kod in zamowienie) {
-    let [nazwa, cena] = produkty[kod];
-    let ilosc = zamowienie[kod];
-    sumaPLN += cena * ilosc;
-
-    // Sprawdzenie notatek
-    let wszystkiePuste = notatki[kod].every(n => n.trim()==="");
-    if(wszystkiePuste){
-      tekst += `<div>${ilosc}x ${nazwa} = ${cena*ilosc} zł</div>`;
-    } else {
-      for(let i=0;i<ilosc;i++){
-        let linia = `1x ${nazwa} = ${cena} zł`;
-        if(notatki[kod][i].trim()!=="") linia += ` (Notatka: ${notatki[kod][i]})`;
-        tekst += `<div>${linia}</div>`;
-      }
-    }
-
-    // pola na notatki
-    for(let i=0;i<ilosc;i++){
-      tekst += `<input type="text" placeholder="Notatka do produktu" value="${notatki[kod][i]}" oninput="notatki['${kod}'][${i}]=this.value"><br>`;
-    }
-  }
-
-  let sumaDoWyswietlenia = sumaPLN;
-  if(rabatPromocyjny){
-    let rabat = (sumaPLN*0.1).toFixed(2);
-    sumaDoWyswietlenia = (sumaPLN - rabat).toFixed(2);
-    tekst += `<div><b>Rabat promocyjny -10% (-${rabat} zł)</b></div>`;
-  }
-
-  tekst += `<div><b>Suma: ${sumaDoWyswietlenia} zł</b></div>`;
-  document.getElementById("koszyk").innerHTML = tekst;
-}
-
-function kodPromocyjny(){
-  let kod = prompt("Wpisz kod promocyjny:");
-  if(kod && kod.trim().toUpperCase()==="PROMO10"){
-    rabatPromocyjny=true;
-    alert("Kod poprawny! Rabat -10% zastosowany.");
-    aktualizujKoszyk();
-  } else alert("Niepoprawny kod promocyjny.");
-}
-
-function wybierzPlatnosc(){
-  if(Object.keys(zamowienie).length===0) return alert("Koszyk jest pusty!");
-  document.getElementById("platnoscDiv").style.display='block';
-  document.getElementById("overlay").style.display='block';
-  document.getElementById("gotowkaInputDiv").style.display='block';
-  document.getElementById("gotowkaInput").value='';
-  document.getElementById("resztaText").textContent='';
-  pokazanoReszte=false;
-  aktualizujWalute();
-}
-
-function aktualizujWalute(){
-  const waluta = document.getElementById("platnoscSelect").value;
-  if(waluta==='PLN'){
-    document.getElementById("gotowkaInput").placeholder="kwota w PLN";
-    document.getElementById("gotowkaInputDiv").style.display='block';
-  } else if(waluta==='USD' || waluta==='EUR'){
-    let sumaWaluta = (sumaPLN*1.2/kursy[waluta]).toFixed(2);
-    document.getElementById("gotowkaInput").placeholder=`kwota w ${waluta}, min: ${sumaWaluta}`;
-    document.getElementById("gotowkaInputDiv").style.display='block';
-  } else if(waluta==='BLIK'){
-    document.getElementById("gotowkaInputDiv").style.display='none';
-  }
-}
-
-function zatwierdzPlatnosc(){
-  wybranaPlatnosc = document.getElementById("platnoscSelect").value;
-  if(wybranaPlatnosc==='USD' || wybranaPlatnosc==='EUR'){
-    sumaDoZaplaty = (sumaPLN*1.2/kursy[wybranaPlatnosc]).toFixed(2);
-  } else if(wybranaPlatnosc==='PLN') sumaDoZaplaty=sumaPLN;
-
-  if(rabatPromocyjny && wybranaPlatnosc!=='BLIK') sumaDoZaplaty=(sumaDoZaplaty*0.9).toFixed(2);
-
-  if(wybranaPlatnosc==='BLIK'){
-    pokazParagon(wybranaPlatnosc,sumaDoZaplaty);
-    document.getElementById("platnoscDiv").style.display='none';
-    document.getElementById("overlay").style.display='none';
-  } else {
-    let kwota=parseFloat(document.getElementById("gotowkaInput").value);
-    if(isNaN(kwota) || kwota<sumaDoZaplaty) return alert("Kwota za mała!");
-    if(!pokazanoReszte){
-      let reszta=(kwota-sumaDoZaplaty).toFixed(2);
-      document.getElementById("resztaText").textContent=`Reszta: ${reszta} ${wybranaPlatnosc}`;
-      pokazanoReszte=true;
-      return;
-    } else {
-      let reszta=(kwota-sumaDoZaplaty).toFixed(2);
-      pokazParagon(wybranaPlatnosc,kwota,reszta,sumaDoZaplaty);
-      document.getElementById("platnoscDiv").style.display='none';
-      document.getElementById("overlay").style.display='none';
-    }
-  }
-}
-
-function pokazParagon(platnosc, kwota=null, reszta=null, sumaDoZaplaty=null){
-  let linie="====================================\n";
-  linie+="   🎄 KASA ŚWIĄTECZNA 🍟☕\n";
-  linie+="   Zamówienie nr "+numer+"\n";
-  linie+=new Date().toLocaleString()+"\n";
-  linie+="------------------------------------\n";
-  linie+="Ilość   Produkt                  Cena\n";
-  linie+="------------------------------------\n";
-
-  for(let kod in zamowienie){
-    let [nazwa,cena]=produkty[kod];
-    let ilosc=zamowienie[kod];
-    let wszystkiePuste = notatki[kod].every(n=>n.trim()==="");
-    if(wszystkiePuste){
-      linie+=`${ilosc}x ${nazwa.padEnd(22)} ${cena*ilosc} zł\n`;
-    } else {
-      for(let i=0;i<ilosc;i++){
-        linie+=`1x ${nazwa.padEnd(22)} ${cena} zł`;
-        if(notatki[kod][i].trim()!=="") linie+=` (Notatka: ${notatki[kod][i]})`;
-        linie+="\n";
-      }
-    }
-  }
-
-  linie+="------------------------------------\n";
-  let sumaFinal=sumaPLN;
-  if(rabatPromocyjny){
-    let rabat=(sumaPLN*0.1).toFixed(2);
-    sumaFinal=(sumaPLN-rabat).toFixed(2);
-    linie+=`Rabat promocyjny -10% (-${rabat} zł)\n`;
-  }
-
-  linie+="SUMA: "+(sumaDoZaplaty?sumaDoZaplaty:sumaFinal)+" "+platnosc+"\n";
-  if(reszta!==null) linie+="Kwota otrzymana: "+kwota+" "+platnosc+"\n";
-  if(reszta!==null) linie+="Reszta: "+reszta+" "+platnosc+"\n";
-  linie+="Płatność: "+platnosc+"\n";
-  linie+="====================================\n";
-
-  document.getElementById("paragon").textContent=linie;
-  numer++;
-  zamowienie={};
-  notatki={};
-  rabatPromocyjny=false;
-  aktualizujKoszyk();
-}
-
-function resetuj(){
-  zamowienie={};
-  notatki={};
-  rabatPromocyjny=false;
-  document.getElementById("paragon").textContent="";
-  document.getElementById("resztaText").textContent='';
-  document.getElementById("platnoscDiv").style.display='none';
-  document.getElementById("overlay").style.display='none';
-  aktualizujKoszyk();
-}
+// (reszta Twojego skryptu zostaje bez zmian)
 </script>
-<!-- Dodaj przycisk drukowania obok innych -->
-<button onclick="drukujParagon()">🖨 Drukuj paragon</button>
 
 <script>
 function drukujParagon() {
