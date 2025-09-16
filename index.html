@@ -51,16 +51,23 @@
   <h3 id="kasjerInfo"></h3>
   <button id="logoutBtn" onclick="wyloguj()">🚪 Wyloguj</button>
 
-  <div class="grid">
-    <button onclick="dodaj('F')">Frytki duże (12 zł)</button>
-    <button onclick="dodaj('f')">Frytki małe (8 zł)</button>
-    <button onclick="dodaj('w')">Wata cukrowa (7 zł)</button>
-    <button onclick="dodaj('c')">Gorąca czekolada (9 zł)</button>
-    <button onclick="dodaj('g')">Gofr suchy (10 zł)</button>
-    <button onclick="dodaj('gb')">Gofr bita śmietana (13 zł)</button>
-    <button onclick="dodaj('gn')">Gofr z nutellą (14 zł)</button>
-    <button onclick="dodaj('gbo')">Gofr bita śmiana + owoce (15 zł)</button>
-  </div>
+<div class="grid">
+  <button onclick="dodaj('F')">Frytki duże (12 zł)</button>
+  <button onclick="dodaj('f')">Frytki małe (8 zł)</button>
+  <button onclick="dodaj('w')">Wata cukrowa (7 zł)</button>
+  <button onclick="dodaj('c')">Gorąca czekolada (9 zł)</button>
+  <button onclick="dodaj('g')">Gofr suchy (10 zł)</button>
+  <button onclick="dodaj('gb')">Gofr bita śmietana (13 zł)</button>
+  <button onclick="dodaj('gn')">Gofr z nutellą (14 zł)</button>
+  <button onclick="dodaj('gbo')">Gofr bita śmiana + owoce (15 zł)</button>
+  <button onclick="dodaj('p')">Pizza kawałek (14 zł)</button>
+  <button onclick="dodaj('h')">Hot-dog (11 zł)</button>
+  <button onclick="dodaj('b')">Burger (18 zł)</button>
+  <button onclick="dodaj('t')">Taco (13 zł)</button>
+  <button onclick="dodaj('l')">Lemoniada (6 zł)</button>
+  <button onclick="dodaj('s')">Sok świeżo wyciskany (9 zł)</button>
+  <button onclick="dodaj('ice')">Lody gałka (5 zł)</button>
+</div>
 
   <h2>Koszyk:</h2>
   <div id="koszyk">Koszyk jest pusty.</div>
@@ -100,8 +107,16 @@ const produkty = {
   "g": ["Gofr suchy", 10],
   "gn": ["Gofr nutella", 14],
   "gb": ["Gofr bita śmietana", 13],
-  "gbo": ["Gofr bita śmietana + owoce", 15]
+  "gbo": ["Gofr bita śmietana + owoce", 15],
+  "p": ["Pizza kawałek", 14],
+  "h": ["Hot-dog", 11],
+  "b": ["Burger", 18],
+  "t": ["Taco", 13],
+  "l": ["Lemoniada", 6],
+  "s": ["Sok świeżo wyciskany", 9],
+  "ice": ["Lody gałka", 5]
 };
+
 
 let kursy = { USD: 4.2, EUR: 4.7 };
 let zamowienie = {};
