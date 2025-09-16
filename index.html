@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Kasa Świąteczna PRO</title>
+<title>Kasa Świąteczna</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; background:#fafafa; color:#111; }
   h1 { text-align:center; }
@@ -23,6 +23,7 @@
     background:#fff; padding:20px; border-radius:15px; box-shadow:0 0 15px rgba(0,0,0,0.5);
     width:300px; text-align:center; z-index:2000;
   }
+  .numerZamowienia { font-size:1.2em; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -37,7 +38,7 @@
 
 <!-- Aplikacja -->
 <div id="app" style="display:none;">
-<h1>🎄 Kasa Świąteczna PRO 🎅</h1>
+<h1>🎄 Kasa Świąteczna 🎅</h1>
 <p id="kasjerInfo"></p>
 <button onclick="wyloguj()">🚪 Wyloguj</button>
 <button onclick="toggleDarkMode()">🌙/☀️ Tryb</button>
@@ -223,9 +224,9 @@ function zatwierdzPlatnosc(){
 // ---- Paragon klienta i kuchni ----
 function pokazParagon(kwota=null,reszta=null){
   let linie="====================================\n";
-  linie+=" 🎄 KASA ŚWIĄTECZNA PRO\n";
+  linie+=" 🎄 KASA ŚWIĄTECZNA\n";
   linie+=" Kasjer: "+zalogowanyKasjer+"\n";
-  linie+=" Zamówienie nr "+numer+"\n";
+  linie+=" Zamówienie nr #"+numer+"\n"; // numer powiększony
   linie+=new Date().toLocaleString()+"\n";
   linie+="------------------------------------\n";
   for(let kod in zamowienie){
@@ -241,13 +242,11 @@ function pokazParagon(kwota=null,reszta=null){
   if(reszta) linie+="Reszta: "+reszta+" "+wybranaPlatnosc+"\n";
   linie+="Punkty: "+(++punktyLojalnosciowe)+"\n";
   linie+="====================================\n";
-  linie+="🎁 Zeskanuj QR i odbierz bonus!\n";
-  linie+="[QR KOD]\n";
   document.getElementById("paragon").textContent=linie;
 
   // Paragon kuchni
-  let linieKuchnia="===== KASA ŚWIĄTECZNA PRO (KUCHNIA) =====\n";
-  linieKuchnia+="Zamówienie nr "+(numer)+"\n";
+  let linieKuchnia="===== KASA ŚWIĄTECZNA (KUCHNIA) =====\n";
+  linieKuchnia+="Zamówienie nr #"+numer+"\n";
   linieKuchnia+=new Date().toLocaleString()+"\n";
   linieKuchnia+="------------------------------------\n";
   for(let kod in zamowienie){
