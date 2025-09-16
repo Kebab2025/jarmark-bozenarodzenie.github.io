@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Kasa Świąteczna </title>
+<title>Kasa Świąteczna PRO</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; background:#fafafa; color:#111; }
   h1 { text-align:center; }
@@ -37,7 +37,7 @@
 
 <!-- Aplikacja -->
 <div id="app" style="display:none;">
-<h1>🎄 Kasa Świąteczna 🎅</h1>
+<h1>🎄 Kasa Świąteczna PRO 🎅</h1>
 <p id="kasjerInfo"></p>
 <button onclick="wyloguj()">🚪 Wyloguj</button>
 <button onclick="toggleDarkMode()">🌙/☀️ Tryb</button>
@@ -230,9 +230,10 @@ function zatwierdzPlatnosc(){
   else pokazParagon(kwota,(kwota-sumaDoZaplaty).toFixed(2));
 }
 
+// ---- Paragon i druk dla kuchni ----
 function pokazParagon(kwota=null,reszta=null){
   let linie="====================================\n";
-  linie+=" 🎄 KASA ŚWIĄTECZNA \n";
+  linie+=" 🎄 KASA ŚWIĄTECZNA PRO\n";
   linie+=" Kasjer: "+zalogowanyKasjer+"\n";
   linie+=" Zamówienie nr "+numer+"\n";
   linie+=new Date().toLocaleString()+"\n";
@@ -253,8 +254,45 @@ function pokazParagon(kwota=null,reszta=null){
   linie+="🎁 Zeskanuj QR i odbierz bonus!\n";
   linie+="[QR KOD]\n";
   document.getElementById("paragon").textContent=linie;
-  numer++; zamowienie={}; notatki={}; rabatPromocyjny=false; aktualizujKoszyk();
+
+  numer++; 
+  // Druk dla klienta
+  const w=window.open('','','width=400,height=600');
+  w.document.write('<pre>'+linie+'</pre>');
+  w.document.close();
+  w.focus();
+  w.print();
+  w.close();
+
+  // Druk dla kuchni
+  drukDlaKuchni();
+
+  zamowienie={}; notatki={}; rabatPromocyjny=false; aktualizujKoszyk();
   document.getElementById("platnoscDiv").style.display='none'; document.getElementById("overlay").style.display='none';
+}
+
+function drukDlaKuchni(){
+  let kuchnia="===== KASA ŚWIĄTECZNA PRO (KUCHNIA) =====\n";
+  kuchnia+="Zamówienie nr "+(numer-1)+"\n";
+  kuchnia+=new Date().toLocaleString()+"\n";
+  kuchnia+="------------------------------------\n";
+  for(let kod in zamowienie){
+    let [nazwa,cena]=produkty[kod],ilosc=zamowienie[kod];
+    let puste=notatki[kod].every(n=>n.trim()==="");
+    if(puste) kuchnia += `${ilosc}x ${nazwa}\n`;
+    else for(let i=0;i<ilosc;i++){
+      kuchnia += `1x ${nazwa}`;
+      if(notatki[kod][i].trim()!=="") kuchnia += ` [${notatki[kod][i]}]`;
+      kuchnia += "\n";
+    }
+  }
+  kuchnia+="====================================\n";
+  const w=window.open('','','width=400,height=600');
+  w.document.write('<pre>'+kuchnia+'</pre>');
+  w.document.close();
+  w.focus();
+  w.print();
+  w.close();
 }
 
 // ---- Inne ----
