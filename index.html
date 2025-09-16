@@ -23,12 +23,11 @@
     background:#fff; padding:20px; border-radius:15px; box-shadow:0 0 15px rgba(0,0,0,0.5);
     width:300px; text-align:center; z-index:2000;
   }
-  .numerZamowienia { font-size:1.2em; font-weight:bold; }
+  .numerZamowienia { font-size:1.5em; font-weight:bold; } /* większy numer zamówienia */
 </style>
 </head>
 <body>
 
-<!-- Logowanie -->
 <div id="loginDiv">
   <h2>🔑 Logowanie kasjera</h2>
   <input type="text" id="loginUser" placeholder="Login"><br><br>
@@ -36,7 +35,6 @@
   <button onclick="zaloguj()">Zaloguj</button>
 </div>
 
-<!-- Aplikacja -->
 <div id="app" style="display:none;">
 <h1>🎄 Kasa Świąteczna 🎅</h1>
 <p id="kasjerInfo"></p>
@@ -91,7 +89,7 @@
   </select>
   <div id="gotowkaInputDiv">
     <label>Kwota od klienta: </label>
-    <input type="number" id="gotowkaInput" min="0" step="0.01" oninput="pokazReszteNaZywo()">
+    <input type="number" id="gotowkaInput" min="0" step="0.01">
   </div>
   <div id="resztaText"></div>
   <button onclick="zatwierdzPlatnosc()">Zatwierdź płatność</button>
@@ -104,33 +102,8 @@
 <pre id="paragonKuchnia"></pre>
 
 <script>
-// ---- Kasjerzy ----
 const kasjerzy = { "kasjer1":"haslo1", "kasjer2":"haslo2", "kasjer3":"haslo3" };
 let zalogowanyKasjer=null;
-
-// Logowanie
-function zaloguj(){
-  let user=document.getElementById("loginUser").value.trim();
-  let pass=document.getElementById("loginPass").value.trim();
-  if(kasjerzy[user] && kasjerzy[user]===pass){
-    zalogowanyKasjer=user;
-    document.getElementById("loginDiv").style.display="none";
-    document.getElementById("app").style.display="block";
-    document.getElementById("kasjerInfo").textContent="👨‍💼 Zalogowany: "+user;
-  } else { alert("Nieprawidłowe dane logowania!"); }
-}
-
-// Wylogowanie
-function wyloguj(){
-  zalogowanyKasjer=null;
-  resetuj();
-  document.getElementById("app").style.display="none";
-  document.getElementById("loginDiv").style.display="block";
-  document.getElementById("loginUser").value="";
-  document.getElementById("loginPass").value="";
-}
-
-// ---- Produkty ----
 const produkty = {
   "F":["Frytki duże",12], "f":["Frytki małe",8], "w":["Wata cukrowa",7],
   "c":["Gorąca czekolada",9], "g":["Gofr suchy",10], "gn":["Gofr nutella",14],
@@ -144,15 +117,21 @@ let zamowienie={}, notatki={}, numer=1, sumaPLN=0;
 let wybranaPlatnosc='', sumaDoZaplaty=0, pokazanoReszte=false;
 let rabatPromocyjny=false, punktyLojalnosciowe=0;
 
-// ---- Koszyk ----
-function dodaj(kod){
-  if(!zamowienie[kod]) zamowienie[kod]=0;
-  zamowienie[kod]++;
-  if(!notatki[kod]) notatki[kod]=[];
-  notatki[kod].push("");
-  aktualizujKoszyk();
+// Logowanie
+function zaloguj(){
+  let user=document.getElementById("loginUser").value.trim();
+  let pass=document.getElementById("loginPass").value.trim();
+  if(kasjerzy[user] && kasjerzy[user]===pass){
+    zalogowanyKasjer=user;
+    document.getElementById("loginDiv").style.display="none";
+    document.getElementById("app").style.display="block";
+    document.getElementById("kasjerInfo").textContent="👨‍💼 Zalogowany: "+user;
+  } else { alert("Nieprawidłowe dane logowania!"); }
 }
+function wyloguj(){ zalogowanyKasjer=null; resetuj(); document.getElementById("app").style.display="none"; document.getElementById("loginDiv").style.display='block'; document.getElementById("loginUser").value=''; document.getElementById("loginPass").value='';}
 
+// Koszyk
+function dodaj(kod){ if(!zamowienie[kod]) zamowienie[kod]=0; zamowienie[kod]++; if(!notatki[kod]) notatki[kod]=[]; notatki[kod].push(""); aktualizujKoszyk();}
 function aktualizujKoszyk(){
   let tekst="", suma=0;
   for(let kod in zamowienie){
@@ -160,74 +139,44 @@ function aktualizujKoszyk(){
     suma+=cena*ilosc;
     let wszystkiePuste=notatki[kod].every(n=>n.trim()==="");
     if(wszystkiePuste) tekst+=`<div>${ilosc}x ${nazwa} = ${cena*ilosc} zł</div>`;
-    else for(let i=0;i<ilosc;i++){
-      let linia=`1x ${nazwa} = ${cena} zł`;
-      if(notatki[kod][i].trim()!=="") linia+=` (Notatka: ${notatki[kod][i]})`;
-      tekst+=`<div>${linia}</div>`;
-    }
+    else for(let i=0;i<ilosc;i++){ let linia=`1x ${nazwa} = ${cena} zł`; if(notatki[kod][i].trim()!=="") linia+=` (Notatka: ${notatki[kod][i]})`; tekst+=`<div>${linia}</div>`;}
     for(let i=0;i<ilosc;i++) tekst+=`<input type="text" placeholder="Notatka" value="${notatki[kod][i]}" oninput="notatki['${kod}'][${i}]=this.value"><br>`;
   }
-  sumaPLN=suma;
-  if(rabatPromocyjny){let r=(suma*0.1).toFixed(2); suma=(suma-r).toFixed(2); tekst+=`<div><b>Rabat promocyjny -10% (-${r} zł)</b></div>`;}
-  tekst+=`<div><b>Suma: ${suma} zł</b></div>`;
-  tekst+=`<div>🎁 Punkty lojalnościowe: ${punktyLojalnosciowe}</div>`;
+  sumaPLN=suma; if(rabatPromocyjny){let r=(suma*0.1).toFixed(2); suma=(suma-r).toFixed(2); tekst+=`<div><b>Rabat promocyjny -10% (-${r} zł)</b></div>`;}
+  tekst+=`<div><b>Suma: ${suma} zł</b></div>`; tekst+=`<div>🎁 Punkty lojalnościowe: ${punktyLojalnosciowe}</div>`;
   document.getElementById("koszyk").innerHTML=tekst;
 }
+function kodPromocyjny(){ let kod=prompt("Wpisz kod promocyjny:"); if(kod && kod.trim().toUpperCase()==="PROMO10"){ rabatPromocyjny=true; alert("Kod poprawny! Rabat -10%"); aktualizujKoszyk();} else alert("Niepoprawny kod.");}
 
-// ---- Promocje ----
-function kodPromocyjny(){
-  let kod=prompt("Wpisz kod promocyjny:");
-  if(kod && kod.trim().toUpperCase()==="PROMO10"){ rabatPromocyjny=true; alert("Kod poprawny! Rabat -10%"); aktualizujKoszyk();}
-  else alert("Niepoprawny kod.");
-}
-
-// ---- Płatności ----
+// Płatność
 function wybierzPlatnosc(){
   if(Object.keys(zamowienie).length===0) return alert("Koszyk jest pusty!");
-  document.getElementById("platnoscDiv").style.display='block';
-  document.getElementById("overlay").style.display='block';
-  document.getElementById("gotowkaInputDiv").style.display='block';
-  document.getElementById("gotowkaInput").value='';
-  document.getElementById("resztaText").textContent='';
-  pokazanoReszte=false; aktualizujWalute();
+  document.getElementById("platnoscDiv").style.display='block'; document.getElementById("overlay").style.display='block';
+  document.getElementById("gotowkaInputDiv").style.display='block'; document.getElementById("gotowkaInput").value=''; document.getElementById("resztaText").textContent=''; pokazanoReszte=false;
+  aktualizujWalute();
 }
-
 function aktualizujWalute(){
   let wal=document.getElementById("platnoscSelect").value;
-  if(wal==='PLN'){document.getElementById("gotowkaInputDiv").style.display='block';}
-  else if(wal==='USD'||wal==='EUR'){
-    let sumaWal=(sumaPLN*1.2/kursy[wal]).toFixed(2);
-    document.getElementById("gotowkaInput").placeholder=`min: ${sumaWal} ${wal}`;
-    document.getElementById("gotowkaInputDiv").style.display='block';
-  } else document.getElementById("gotowkaInputDiv").style.display='none';
+  let kwotaDoZaplaty=sumaPLN; if(rabatPromocyjny) kwotaDoZaplaty=(kwotaDoZaplaty*0.9).toFixed(2);
+  if(wal==='USD'||wal==='EUR') kwotaDoZaplaty=(kwotaDoZaplaty*1.2/kursy[wal]).toFixed(2);
+  document.getElementById("gotowkaInput").placeholder=`min: ${kwotaDoZaplaty} ${wal}`;
 }
-
-function pokazReszteNaZywo(){
-  let kwota=parseFloat(document.getElementById("gotowkaInput").value);
-  if(isNaN(kwota)) return document.getElementById("resztaText").textContent="";
-  let doZaplaty=sumaPLN;
-  if(rabatPromocyjny) doZaplaty=(doZaplaty*0.9).toFixed(2);
-  let reszta=(kwota-doZaplaty).toFixed(2);
-  document.getElementById("resztaText").textContent=reszta>=0 ? `Reszta: ${reszta} PLN` : `Brakuje: ${Math.abs(reszta)} PLN`;
-}
-
 function zatwierdzPlatnosc(){
   wybranaPlatnosc=document.getElementById("platnoscSelect").value;
-  sumaDoZaplaty=sumaPLN;
-  if(rabatPromocyjny) sumaDoZaplaty=(sumaDoZaplaty*0.9).toFixed(2);
   let kwota=parseFloat(document.getElementById("gotowkaInput").value);
+  sumaDoZaplaty=sumaPLN; if(rabatPromocyjny) sumaDoZaplaty=(sumaDoZaplaty*0.9).toFixed(2);
+  if(wybranaPlatnosc==='USD'||wybranaPlatnosc==='EUR') sumaDoZaplaty=(sumaDoZaplaty*1.2/kursy[wybranaPlatnosc]).toFixed(2);
   if(wybranaPlatnosc==='BLIK'){ pokazParagon(); return;}
-  if(isNaN(kwota)||kwota<sumaDoZaplaty) return alert("Za mała kwota!");
+  if(!pokazanoReszte){ if(isNaN(kwota)||kwota<sumaDoZaplaty) return alert(`Za mała kwota! Minimalnie ${sumaDoZaplaty} ${wybranaPlatnosc}`); document.getElementById("resztaText").textContent=`Reszta: ${(kwota-sumaDoZaplaty).toFixed(2)} ${wybranaPlatnosc}`; pokazanoReszte=true; return;}
   pokazParagon(kwota,(kwota-sumaDoZaplaty).toFixed(2));
 }
 
-// ---- Paragon klienta i kuchni ----
+// Paragony
 function pokazParagon(kwota=null,reszta=null){
   let linie="====================================\n";
   linie+=" 🎄 KASA ŚWIĄTECZNA\n";
   linie+=" Kasjer: "+zalogowanyKasjer+"\n";
-  linie+=" Zamówienie nr #"+numer+"\n"; // numer powiększony
-  linie+=new Date().toLocaleString()+"\n";
+  linie+=" Zamówienie nr #"+numer+"\n";
   linie+="------------------------------------\n";
   for(let kod in zamowienie){
     let [nazwa,cena]=produkty[kod],ilosc=zamowienie[kod];
@@ -244,20 +193,15 @@ function pokazParagon(kwota=null,reszta=null){
   linie+="====================================\n";
   document.getElementById("paragon").textContent=linie;
 
-  // Paragon kuchni
+  // Kuchnia
   let linieKuchnia="===== KASA ŚWIĄTECZNA (KUCHNIA) =====\n";
   linieKuchnia+="Zamówienie nr #"+numer+"\n";
-  linieKuchnia+=new Date().toLocaleString()+"\n";
   linieKuchnia+="------------------------------------\n";
   for(let kod in zamowienie){
     let [nazwa]=produkty[kod],ilosc=zamowienie[kod];
     let puste=notatki[kod].every(n=>n.trim()==="");
     if(puste) linieKuchnia += `${ilosc}x ${nazwa}\n`;
-    else for(let i=0;i<ilosc;i++){
-      linieKuchnia += `1x ${nazwa}`;
-      if(notatki[kod][i].trim()!=="") linieKuchnia += ` [${notatki[kod][i]}]`;
-      linieKuchnia += "\n";
-    }
+    else for(let i=0;i<ilosc;i++){ linieKuchnia += `1x ${nazwa}`; if(notatki[kod][i].trim()!=="") linieKuchnia += ` [${notatki[kod][i]}]`; linieKuchnia+="\n";}
   }
   linieKuchnia+="====================================\n";
   document.getElementById("paragonKuchnia").textContent=linieKuchnia;
@@ -266,10 +210,8 @@ function pokazParagon(kwota=null,reszta=null){
   document.getElementById("platnoscDiv").style.display='none'; document.getElementById("overlay").style.display='none';
 }
 
-// ---- Inne ----
 function resetuj(){zamowienie={};notatki={};rabatPromocyjny=false;document.getElementById("paragon").textContent="";document.getElementById("paragonKuchnia").textContent="";aktualizujKoszyk();}
 function toggleDarkMode(){document.body.classList.toggle("dark");}
 </script>
-
 </body>
 </html>
