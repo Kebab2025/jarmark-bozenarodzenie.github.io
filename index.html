@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Kasa Świąteczna PRO</title>
+<title>Kasa Świąteczna </title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; background:#fafafa; color:#111; }
   h1 { text-align:center; }
@@ -27,6 +27,7 @@
 </head>
 <body>
 
+<!-- Logowanie -->
 <div id="loginDiv">
   <h2>🔑 Logowanie kasjera</h2>
   <input type="text" id="loginUser" placeholder="Login"><br><br>
@@ -34,9 +35,11 @@
   <button onclick="zaloguj()">Zaloguj</button>
 </div>
 
+<!-- Aplikacja -->
 <div id="app" style="display:none;">
-<h1>🎄 Kasa Świąteczna PRO 🎅</h1>
+<h1>🎄 Kasa Świąteczna 🎅</h1>
 <p id="kasjerInfo"></p>
+<button onclick="wyloguj()">🚪 Wyloguj</button>
 <button onclick="toggleDarkMode()">🌙/☀️ Tryb</button>
 <hr>
 
@@ -107,6 +110,7 @@ const kasjerzy = {
 };
 let zalogowanyKasjer=null;
 
+// Logowanie
 function zaloguj(){
   let user=document.getElementById("loginUser").value.trim();
   let pass=document.getElementById("loginPass").value.trim();
@@ -118,6 +122,16 @@ function zaloguj(){
   } else {
     alert("Nieprawidłowe dane logowania!");
   }
+}
+
+// Wylogowanie
+function wyloguj(){
+  zalogowanyKasjer=null;
+  resetuj();
+  document.getElementById("app").style.display="none";
+  document.getElementById("loginDiv").style.display="block";
+  document.getElementById("loginUser").value="";
+  document.getElementById("loginPass").value="";
 }
 
 // ---- Produkty ----
