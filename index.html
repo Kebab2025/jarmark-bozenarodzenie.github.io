@@ -164,12 +164,16 @@ function zamknijModal(){
   document.getElementById("modalInput").value=''; 
 }
 function zatwierdzModal(){
-  if(modalTyp==="notatka"){ notatki[aktualnyKod][aktualnyIndeks]=document.getElementById("modalInput").value; aktualizujKoszyk(); zamknijModal(); }
+  if(modalTyp==="notatka"){
+    notatki[aktualnyKod][aktualnyIndeks] = document.getElementById("modalInput").value;
+    aktualizujKoszyk();
+    zamknijModal();
+  }
   else if(modalTyp==="kod"){
     let val=document.getElementById("modalInput").value.trim().toUpperCase();
     if(val==="PROMO10"){ rabatPromocyjny=true; aktualizujKoszyk(); zamknijModal(); }
-    else { document.getElementById("komunikatText").textContent="Niepoprawny kod."; modalTyp="info"; } // dalej OK zamyka
-  } else { zamknijModal(); } 
+    else { document.getElementById("komunikatText").textContent="Niepoprawny kod."; modalTyp="info"; }
+  } else { zamknijModal(); }
 }
 
 // Logowanie i wylogowanie
@@ -186,31 +190,37 @@ function zaloguj(){
 function wyloguj(){ zalogowanyKasjer=null; resetuj(); document.getElementById("app").style.display='none'; document.getElementById("loginDiv").style.display='block'; document.getElementById("loginUser").value=''; document.getElementById("loginPass").value=''; }
 
 // Koszyk
-function dodaj(kod){ if(!zamowienie[kod]) zamowienie[kod]=0; zamowienie[kod]++; if(!notatki[kod]) notatki[kod]=[]; notatki[kod].push(""); aktualizujKoszyk(); }
+function dodaj(kod){ 
+  if(!zamowienie[kod]) zamowienie[kod]=0; 
+  zamowienie[kod]++; 
+  if(!notatki[kod]) notatki[kod]=[]; 
+  notatki[kod].push(""); 
+  aktualizujKoszyk(); 
+}
 function dodajNotatke(kod,i){ pokazModal("Dodaj notatkę:","notatka",kod,i); }
 function aktualizujKoszyk(){
   let tekst="", suma=0;
   for(let kod in zamowienie){
-    let [nazwa,cena]=produkty[kod],ilosc=zamowienie[kod];
+    let [nazwa,cena]=produkty[kod], ilosc=zamowienie[kod];
     suma+=cena*ilosc;
+    let notatkiLinie = notatki[kod];
+    tekst += `<div><b>${ilosc}x ${nazwa} = ${(cena*ilosc).toFixed(2)} zł</b></div>`;
     for(let i=0;i<ilosc;i++){
-      let linia=`1x ${nazwa} = ${cena} zł`;
-      if(notatki[kod][i].trim()!=="") linia+=` (Notatka: ${notatki[kod][i]})`;
-      linia+=` <button class="notaBtn" onclick="dodajNotatke('${kod}',${i})">+</button>`;
-      tekst+=`<div>${linia}</div>`;
+      if(notatkiLinie[i] && notatkiLinie[i].trim()!=="") tekst += `<div>• Notatka: ${notatkiLinie[i]} <button class="notaBtn" onclick="dodajNotatke('${kod}',${i})">+</button></div>`;
+      else tekst += `<div><button class="notaBtn" onclick="dodajNotatke('${kod}',${i})">Dodaj notatkę</button></div>`;
     }
   }
   sumaPLN=suma;
   if(rabatPromocyjny){ let r=(suma*0.1).toFixed(2); suma=(suma-r).toFixed(2); tekst+=`<div><b>Rabat promocyjny -10% (-${r} zł)</b></div>`; }
-  tekst+=`<div><b>Suma: ${suma} zł</b></div>`;
   if(tekst==="") tekst="Koszyk jest pusty.";
+  tekst += `<br><br>`;
   document.getElementById("koszyk").innerHTML=tekst;
 }
 
 // Kod promocyjny
 function otworzKodPromocyjny(){ pokazModal("Wpisz kod promocyjny:","kod"); }
 
-// Płatność i paragon
+// Płatność
 function wybierzPlatnosc(){
   if(Object.keys(zamowienie).length===0) return pokazModal("Koszyk jest pusty!");
   document.getElementById("platnoscDiv").style.display='block';
@@ -223,10 +233,10 @@ function wybierzPlatnosc(){
 }
 function aktualizujWalute(){
   let wal=document.getElementById("platnoscSelect").value;
-  let kwota=sumaPLN;
-  if(rabatPromocyjny) kwota=(kwota*0.9).toFixed(2);
-  if(wal==='USD'||wal==='EUR') kwota=(kwota*1.2/kursy[wal]).toFixed(2);
-  document.getElementById("gotowkaInput").placeholder=`min: ${kwota} ${wal}`;
+  let kwotaDoZaplaty=sumaPLN;
+  if(rabatPromocyjny) kwotaDoZaplaty=(kwotaDoZaplaty*0.9).toFixed(2);
+  if(wal==='USD'||wal==='EUR') kwotaDoZaplaty=(kwotaDoZaplaty*1.2/kursy[wal]).toFixed(2);
+  document.getElementById("gotowkaInput").placeholder=`min: ${kwotaDoZaplaty} ${wal}`;
 }
 function zatwierdzPlatnosc(){
   wybranaPlatnosc=document.getElementById("platnoscSelect").value;
@@ -234,7 +244,7 @@ function zatwierdzPlatnosc(){
   sumaDoZaplaty=sumaPLN;
   if(rabatPromocyjny) sumaDoZaplaty=(sumaDoZaplaty*0.9).toFixed(2);
   if(wybranaPlatnosc==='USD'||wybranaPlatnosc==='EUR') sumaDoZaplaty=(sumaDoZaplaty*1.2/kursy[wybranaPlatnosc]).toFixed(2);
-  if(wybranaPlatnosc==='BLIK'){ pokazParagon(); return; }
+  if(wybranaPlatnosc==='BLIK'){ pokazParagon(); return;}
   if(!pokazanoReszte){
     if(isNaN(kwota)||kwota<sumaDoZaplaty) return pokazModal(`Za mała kwota! Minimalnie ${sumaDoZaplaty} ${wybranaPlatnosc}`);
     document.getElementById("resztaText").textContent=`Reszta: ${(kwota-sumaDoZaplaty).toFixed(2)} ${wybranaPlatnosc}`;
@@ -242,6 +252,8 @@ function zatwierdzPlatnosc(){
   }
   pokazParagon(kwota,(kwota-sumaDoZaplaty).toFixed(2));
 }
+
+// Paragon
 function pokazParagon(kwota=null,reszta=null){
   let teraz=new Date();
   let godzina=teraz.toLocaleTimeString();
@@ -252,15 +264,16 @@ function pokazParagon(kwota=null,reszta=null){
   linie+="------------------------------------\n";
   for(let kod in zamowienie){
     let [nazwa,cena]=produkty[kod],ilosc=zamowienie[kod];
-    for(let i=0;i<ilosc;i++) linie+=`1x ${nazwa} ${cena} zł\n`;
+    linie+=`${ilosc}x ${nazwa} ${cena*ilosc} zł\n`;
   }
   linie+="------------------------------------\n";
   if(rabatPromocyjny) linie+="Rabat -10%\n";
   linie+="SUMA: "+sumaDoZaplaty+" "+wybranaPlatnosc+"\n";
   if(reszta) linie+="Reszta: "+reszta+" "+wybranaPlatnosc+"\n";
+  linie+="************************************\n";
+  linie+="Dziękujemy – Zapraszamy ponownie!\n";
   document.getElementById("paragon").textContent=linie;
 
-  // Kuchnia
   let linieK="********** KUCHNIA **********\n";
   linieK+="Godzina: "+godzina+"\n";
   linieK+="Zamówienie nr #"+numer+"\n";
@@ -268,13 +281,13 @@ function pokazParagon(kwota=null,reszta=null){
   for(let kod in zamowienie){
     let [nazwa]=produkty[kod],ilosc=zamowienie[kod];
     for(let i=0;i<ilosc;i++){
-      linieK+=`1x ${nazwa}`;
-      if(notatki[kod][i].trim()!=="") linieK+=` [${notatki[kod][i]}]`;
+      linieK+=`${nazwa}`;
+      if(notatki[kod][i] && notatki[kod][i].trim()!=="") linieK+=" ["+notatki[kod][i]+"]";
       linieK+="\n";
     }
   }
   linieK+="************************************\n";
-  document.getElementById("paragonKuchnia").textContent=linieK;
+  document.getElementById("paragonKuchnia").textContent = linieK;
 
   numer++; zamowienie={}; notatki={}; rabatPromocyjny=false; aktualizujKoszyk();
   document.getElementById("platnoscDiv").style.display='none'; document.getElementById("overlay").style.display='none';
@@ -283,7 +296,6 @@ function pokazParagon(kwota=null,reszta=null){
 // Reset i tryb
 function resetuj(){ zamowienie={}; notatki={}; rabatPromocyjny=false; document.getElementById("paragon").textContent=""; document.getElementById("paragonKuchnia").textContent=""; aktualizujKoszyk(); }
 function toggleDarkMode(){ document.body.classList.toggle("dark"); }
-
 </script>
 </body>
 </html>
