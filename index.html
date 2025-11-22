@@ -376,7 +376,7 @@ function usunProdukt(){
 
 // ---------------- Presety ----------------
 function zapiszPreset() {
-  if(zalogowanyKasjer !== "kasjer1") return pokazModal("Tylko kasjer1 może zapisywać presety!");
+  
   let presetName = prompt("Podaj nazwę presetu:");
   if(!presetName) return;
   let preset = {produkty: JSON.parse(JSON.stringify(produkty)), kategorie: JSON.parse(JSON.stringify(kategorie))};
