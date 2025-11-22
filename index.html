@@ -109,7 +109,23 @@ button:hover { background:#ddd; }
 <pre id="paragon"></pre>
 <h2>Potwierdzenie kuchni:</h2>
 <pre id="paragonKuchnia"></pre>
-
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 <script>
 // Loginy i hasła
 const kasjerzy = { "kasjer1":"A1b2C3d4", "kasjer2":"X9y8Z7w6", "kasjer3":"M4n5O6p7" };
@@ -313,6 +329,7 @@ function pokazParagon(kwota=null,reszta=null){
   document.getElementById("platnoscDiv").style.display='none'; document.getElementById("overlay").style.display='none';
 }
 
+
 // Reset i tryb
 function resetuj(){ zamowienie={}; notatki={}; rabatPromocyjny=false; document.getElementById("paragon").textContent=""; document.getElementById("paragonKuchnia").textContent=""; aktualizujKoszyk(); }
 function toggleDarkMode(){ document.body.classList.toggle("dark"); }
@@ -412,23 +429,7 @@ function wczytajPreset(){
   pokazModal("Preset wczytany!");
   otworzProdukty();
 }
-<br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
-  <br>
+
 // Inicjalizacja listy presetów przy ładowaniu
 odswiezListePresetow();
 </script>
