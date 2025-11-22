@@ -10,7 +10,7 @@ h1 { text-align:center; }
 button { padding:12px; font-size:16px; border-radius:10px; cursor:pointer; border:1px solid #ccc; background:#eee; }
 button:hover { background:#ddd; }
 #koszyk, #paragon, #paragonKuchnia { background:#f0f0f0; padding:15px; border-radius:10px; margin-bottom:20px; white-space:pre-wrap; }
-#platnoscDiv, #komunikatDiv, #produktyDiv { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+#platnoscDiv, #komunikatDiv, #produktyDiv, #sosyDiv { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
   background:white; padding:20px; border-radius:15px; box-shadow:0 0 15px rgba(0,0,0,0.5); z-index:1001; width:350px; text-align:center; max-height:90%; overflow:auto; }
 #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; }
 #resztaText { margin-top:15px; font-weight:bold; }
@@ -26,6 +26,7 @@ button:hover { background:#ddd; }
 </head>
 <body>
 
+<!-- LOGOWANIE -->
 <div id="loginDiv">
 <h2>🔑 Logowanie kasjera</h2>
 <input type="text" id="loginUser" placeholder="Login"><br><br>
@@ -61,6 +62,7 @@ button:hover { background:#ddd; }
 
 <div id="overlay"></div>
 
+<!-- PŁATNOSCI -->
 <div id="platnoscDiv">
 <h3>Wybierz formę płatności:</h3>
 <select id="platnoscSelect" onchange="aktualizujWalute()">
@@ -77,6 +79,7 @@ button:hover { background:#ddd; }
 <button onclick="zatwierdzPlatnosc()">Zatwierdź płatność</button>
 </div>
 
+<!-- MODAL -->
 <div id="komunikatDiv">
 <p id="komunikatText"></p>
 <input type="text" id="modalInput" placeholder="">
@@ -84,6 +87,15 @@ button:hover { background:#ddd; }
 <button onclick="zatwierdzModal()">OK</button>
 </div>
 
+<!-- SOSY (NOWE) -->
+<div id="sosyDiv">
+<h3>Wybierz sosy</h3>
+<div id="sosyLista"></div>
+<br>
+<button onclick="zatwierdzSosy()">OK</button>
+</div>
+
+<!-- ZARZĄDZANIE PRODUKTAMI -->
 <div id="produktyDiv">
 <h3>💼 Zarządzaj produktami</h3>
 <select id="listaProduktow" size="5" style="width:100%;"></select><br>
@@ -122,16 +134,13 @@ button:hover { background:#ddd; }
 <br>
 <br>
 <br>
-<br>
-<br>
-<br>
-<br>
 <script>
-// Loginy i hasła
+
+// Loginy
 const kasjerzy = { "kasjer1":"A1b2C3d4", "kasjer2":"X9y8Z7w6", "kasjer3":"M4n5O6p7" };
 let zalogowanyKasjer=null;
 
-// Produkty i kategorie
+// Produkty
 let produkty = {
   "F_m":["Frytki małe",8], "F_s":["Frytki średnie",10], "F_l":["Frytki duże",12],
   "b":["Burger klasyczny",18], "bk":["Burger Królewski",24],
@@ -144,6 +153,7 @@ let produkty = {
   "k":["Kawa",7], "t":["Herbata",6],
   "s":["Sok pomarańczowy",8], "cola_m":["Cola mała",4], "cola_l":["Cola duża",6]
 };
+
 let kategorie = { 
   "jedzenie":["F_m","F_s","F_l","b","bk","pz_m","pz_l","ph_m","ph_l"], 
   "desery":["w","g","gn","gb","gbo","l_m","l_l"], 
@@ -151,11 +161,18 @@ let kategorie = {
 };
 
 let kursy={USD:4.2,EUR:4.7};
-let zamowienie={}, notatki={}, numer=1, sumaPLN=0;
+
+let zamowienie={}, notatki={}, sosy={}, numer=1, sumaPLN=0;
 let wybranaPlatnosc='', sumaDoZaplaty=0, pokazanoReszte=false;
 let rabatPromocyjny=false, modalTyp=null, aktualnyKod=null, aktualnyIndeks=null;
 
-// Generowanie przycisków produktów
+// --- SOSY ---
+const produktyWSosami = ["F_m","F_s","F_l","pz_m","pz_l","ph_m","ph_l"];
+const listaSosow = ["Ketchup", "Majonez", "Czosnkowy", "BBQ", "1000 wysp", "Ostry", "Brak sosu"];
+let aktualnyKodSosu=null;
+let aktualnyIndeksSosu=null;
+
+// Generowanie przycisków
 function generujPrzyciski(){
   for(let kat in kategorie){
     let div=document.getElementById(kat+"Grid");
@@ -165,14 +182,58 @@ function generujPrzyciski(){
       let btn=document.createElement("button");
       btn.textContent=`${nazwa} (${cena} zł)`;
       btn.dataset.kod=kod;
-      btn.onclick=()=>dodaj(kod);
+      btn.onclick=()=>klikProdukt(kod);
       div.appendChild(btn);
     });
   }
 }
 generujPrzyciski();
 
-// Wyszukiwanie produktów
+function klikProdukt(kod){
+  // jeśli produkt wymaga sosów → otwórz wybór sosów
+  if(produktyWSosami.includes(kod)){
+    otworzSosy(kod);
+  } else {
+    dodaj(kod);
+  }
+}
+
+// --- MODAL SOSÓW ---
+function otworzSosy(kod){
+  aktualnyKodSosu = kod;
+
+  let div=document.getElementById("sosyLista");
+  div.innerHTML="";
+
+  listaSosow.forEach(sos=>{
+    let id="sos_"+sos.replace(/\s+/g,'_');
+    div.innerHTML += `<label><input type="checkbox" id="${id}" value="${sos}"> ${sos}</label><br>`;
+  });
+
+  document.getElementById("sosyDiv").style.display="block";
+  document.getElementById("overlay").style.display="block";
+}
+
+function zatwierdzSosy(){
+  let wybrane=[];
+  listaSosow.forEach(sos=>{
+    let id="sos_"+sos.replace(/\s+/g,'_');
+    if(document.getElementById(id).checked){
+      if(sos==="Brak sosu") wybrane=["Brak sosu"];
+      else if(!wybrane.includes("Brak sosu")) wybrane.push(sos);
+    }
+  });
+
+  dodaj(aktualnyKodSosu);
+
+  if(!sosy[aktualnyKodSosu]) sosy[aktualnyKodSosu]=[];
+  sosy[aktualnyKodSosu].push(wybrane);
+
+  document.getElementById("sosyDiv").style.display="none";
+  document.getElementById("overlay").style.display="none";
+}
+
+// Wyszukiwanie
 function filtrujProdukty(){
   let filter=document.getElementById("szukajProduktow").value.toLowerCase();
   for(let kat in kategorie){
@@ -212,7 +273,7 @@ function zatwierdzModal(){
   } else { zamknijModal(); }
 }
 
-// Logowanie i wylogowanie
+// Logowanie
 function zaloguj(){
   let user=document.getElementById("loginUser").value.trim();
   let pass=document.getElementById("loginPass").value.trim();
@@ -231,24 +292,37 @@ function dodaj(kod){
   zamowienie[kod]++; 
   if(!notatki[kod]) notatki[kod]=[]; 
   notatki[kod].push(""); 
+  if(!sosy[kod]) sosy[kod]=[];
   aktualizujKoszyk(); 
 }
+
 function dodajNotatke(kod,i){ pokazModal("Dodaj notatkę:","notatka",kod,i); }
+
 function aktualizujKoszyk(){
   let tekst="", suma=0;
+
   for(let kod in zamowienie){
     let [nazwa,cena]=produkty[kod], ilosc=zamowienie[kod];
     suma+=cena*ilosc;
-    let notatkiLinie = notatki[kod];
+
     tekst += `<div><b>${ilosc}x ${nazwa} = ${(cena*ilosc).toFixed(2)} zł</b></div>`;
+
     for(let i=0;i<ilosc;i++){
-      if(notatkiLinie[i] && notatkiLinie[i].trim()!=="") tekst += `<div>• Notatka: ${notatkiLinie[i]} <button class="notaBtn" onclick="dodajNotatke('${kod}',${i})">+</button></div>`;
+      if(notatki[kod][i] && notatki[kod][i].trim()!=="") tekst += `<div>• Notatka: ${notatki[kod][i]} <button class="notaBtn" onclick="dodajNotatke('${kod}',${i})">+</button></div>`;
       else tekst += `<div><button class="notaBtn" onclick="dodajNotatke('${kod}',${i})">Dodaj notatkę</button></div>`;
     }
   }
+
   sumaPLN=suma;
-  if(rabatPromocyjny){ let r=(suma*0.1).toFixed(2); suma=(suma-r).toFixed(2); tekst+=`<div><b>Rabat promocyjny -10% (-${r} zł)</b></div>`; }
+
+  if(rabatPromocyjny){ 
+    let r=(suma*0.1).toFixed(2);
+    suma=(suma-r).toFixed(2);
+    tekst+=`<div><b>Rabat -10% (-${r} zł)</b></div>`; 
+  }
+
   if(tekst==="") tekst="Koszyk jest pusty.";
+
   tekst += `<br><br>`;
   document.getElementById("koszyk").innerHTML=tekst;
 }
@@ -256,7 +330,7 @@ function aktualizujKoszyk(){
 // Kod promocyjny
 function otworzKodPromocyjny(){ pokazModal("Wpisz kod promocyjny:","kod"); }
 
-// Płatność
+// PLATNOSC
 function wybierzPlatnosc(){
   if(Object.keys(zamowienie).length===0) return pokazModal("Koszyk jest pusty!");
   document.getElementById("platnoscDiv").style.display='block';
@@ -289,19 +363,22 @@ function zatwierdzPlatnosc(){
   pokazParagon(kwota,(kwota-sumaDoZaplaty).toFixed(2));
 }
 
-// Paragon
+// PARAGON
 function pokazParagon(kwota=null,reszta=null){
   let teraz=new Date();
   let godzina=teraz.toLocaleTimeString();
+
   let linie="********** POTWIERDZENIE **********\n";
   linie+="Godzina: "+godzina+"\n";
   linie+="Kasjer: "+zalogowanyKasjer+"\n";
   linie+="Zamówienie nr #"+numer+"\n";
   linie+="------------------------------------\n";
+
   for(let kod in zamowienie){
     let [nazwa,cena]=produkty[kod],ilosc=zamowienie[kod];
     linie+=`${ilosc}x ${nazwa} ${cena*ilosc} zł\n`;
   }
+
   linie+="------------------------------------\n";
   if(rabatPromocyjny) linie+="Rabat -10%\n";
   linie+="SUMA: "+sumaDoZaplaty+" "+wybranaPlatnosc+"\n";
@@ -310,31 +387,45 @@ function pokazParagon(kwota=null,reszta=null){
   linie+="Dziękujemy – Zapraszamy ponownie!\n";
   document.getElementById("paragon").textContent=linie;
 
+  // KUCHNIA
   let linieK="********** KUCHNIA **********\n";
   linieK+="Godzina: "+godzina+"\n";
   linieK+="Zamówienie nr #"+numer+"\n";
   linieK+="------------------------------------\n";
+
   for(let kod in zamowienie){
-    let [nazwa]=produkty[kod],ilosc=zamowienie[kod];
+    let [nazwa]=produkty[kod], ilosc=zamowienie[kod];
+
     for(let i=0;i<ilosc;i++){
       linieK+=`${nazwa}`;
-      if(notatki[kod][i] && notatki[kod][i].trim()!=="") linieK+=" ["+notatki[kod][i]+"]";
+
+      // sosy (TYLKO KUCHNIA)
+      if(sosy[kod] && sosy[kod][i] && sosy[kod][i].length>0){
+        linieK+=` [Sos: ${sosy[kod][i].join(", ")}]`;
+      }
+
+      // notatki
+      if(notatki[kod][i] && notatki[kod][i].trim()!==""){
+        linieK+=` [${notatki[kod][i]}]`;
+      }
       linieK+="\n";
     }
   }
+
   linieK+="************************************\n";
   document.getElementById("paragonKuchnia").textContent = linieK;
 
-  numer++; zamowienie={}; notatki={}; rabatPromocyjny=false; aktualizujKoszyk();
+  numer++; zamowienie={}; notatki={}; sosy={}; rabatPromocyjny=false; aktualizujKoszyk();
   document.getElementById("platnoscDiv").style.display='none'; document.getElementById("overlay").style.display='none';
 }
 
-
-// Reset i tryb
-function resetuj(){ zamowienie={}; notatki={}; rabatPromocyjny=false; document.getElementById("paragon").textContent=""; document.getElementById("paragonKuchnia").textContent=""; aktualizujKoszyk(); }
+// Reset
+function resetuj(){ zamowienie={}; notatki={}; sosy={}; rabatPromocyjny=false; document.getElementById("paragon").textContent=""; document.getElementById("paragonKuchnia").textContent=""; aktualizujKoszyk(); }
 function toggleDarkMode(){ document.body.classList.toggle("dark"); }
 
 // ---------------- Zarządzanie produktami ----------------
+// (bez zmian – zostawiłem całość aby działała)
+
 function otworzProdukty(){
   odswiezListePresetow();
   let select=document.getElementById("listaProduktow");
@@ -361,7 +452,6 @@ function zmienCene(){
   if(nazwa) produkty[kod][0]=nazwa;
   if(!isNaN(cena)) produkty[kod][1]=cena;
   if(kat !== null && kat!==undefined){
-    // usuń z poprzedniej kategorii
     for(let k in kategorie){ kategorie[k]=kategorie[k].filter(x=>x!==kod); }
     kategorie[kat].push(kod);
   }
@@ -391,9 +481,8 @@ function usunProdukt(){
   otworzProdukty();
 }
 
-// ---------------- Presety ----------------
+// Presety
 function zapiszPreset() {
-  
   let presetName = prompt("Podaj nazwę presetu:");
   if(!presetName) return;
   let preset = {produkty: JSON.parse(JSON.stringify(produkty)), kategorie: JSON.parse(JSON.stringify(kategorie))};
@@ -430,8 +519,8 @@ function wczytajPreset(){
   otworzProdukty();
 }
 
-// Inicjalizacja listy presetów przy ładowaniu
 odswiezListePresetow();
+
 </script>
 </body>
 </html>
